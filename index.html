@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>100 of your virtues </title>
+    <style>
+        /* 基础样式重置 */
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: 'Courier New', monospace;
+            image-rendering: pixelated;
+            touch-action: manipulation;
+        }
+        
+        /* 页面容器 */
+        .page-container {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+        }
+        
+        /* 进度条页面样式 */
+        .progress-page {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 20;
+            transition: opacity 1s ease;
+        }
+        
+        .progress-page.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .container {
+            text-align: center;
+            max-width: 800px;
+            padding: 20px;
+        }
+        
+        .hearts-container {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-bottom: 30px;
+            gap: 30px;
+        }
+        
+        .pixel-heart {
+            display: grid;
+            grid-template-columns: repeat(9, 10px);
+            grid-template-rows: repeat(8, 10px);
+            gap: 1px;
+            position: relative;
+        }
+        
+        .pixel {
+            width: 10px;
+            height: 10px;
+            background-color: #f0f0f0;
+            transition: background-color 0.3s ease;
+        }
+        
+        /* 边框像素 */
+        .pixel.border {
+            background-color: #000;
+        }
+        
+        /* 可填充像素 */
+        .pixel.fill {
+            background-color: #f0f0f0;
+        }
+        
+        .pixel.fill.active {
+            background-color: #ff6b6b;
+            box-shadow: 0 0 2px rgba(255, 107, 107, 0.5);
+        }
+        
+        .pixel.blank {
+            visibility: hidden;
+        }
+        
+        .progress-container {
+            width: 100%;
+            background-color: #f0f0f0;
+            height: 20px;
+            margin: 20px 0;
+            border: 1px solid #ddd;
+            position: relative;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #ff6b6b, #ff8e8e);
+            transition: width 0.5s ease;
+            position: relative;
+        }
+        
+        .progress-text {
+            font-size: 24px;
+            margin: 15px 0;
+            color: #ff6b6b;
+        }
+        
+        .percentage {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 12px;
+            color: white;
+            text-shadow: 1px 1px 1px rgba(0,0,0,0.3);
+        }
+        
+        /* 完成后的淡出动画 */
+        @keyframes fadeOut {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.05); }
+            100% { opacity: 0; transform: scale(0); }
+        }
+        
+        .fade-out {
+            animation: fadeOut 1s ease forwards;
+        }
+        
+        /* 优点页面样式 */
+        .advantages-page {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #f0f8ff;
+            font-family: 'Press Start 2P', cursive;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 1s ease;
+            z-index: 10;
+        }
+        
+        .advantages-page.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        
+        /* 像素点背景装饰 */
+        .pixel-dots {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(#ff9e9e 1px, transparent 1px),
+                radial-gradient(#9eff9e 1px, transparent 1px),
+                radial-gradient(#9e9eff 1px, transparent 1px);
+            background-size: 20px 20px;
+            background-position: 0 0, 10px 10px, 5px 15px;
+            opacity: 0.3;
+            z-index: 0;
+        }
+        
+        /* 主弹窗 */
+        .pixel-modal {
+            position: relative;
+            width: min(360px, 90vw);
+            border: 4px solid #5a5a5a;
+            background-color: #e8f4f8;
+            box-shadow: 
+                8px 8px 0 rgba(0, 0, 0, 0.1),
+                0 0 0 8px #b8d8e0,
+                0 0 0 12px #5a5a5a;
+            animation: appear 0.5s ease-out;
+            z-index: 10;
+        }
+        
+        /* 优点弹窗 - 统一风格 */
+        .advantage-modal {
+            position: fixed;
+            width: min(300px, 85vw);
+            border: 4px solid #5a5a5a;
+            background-color: #e8f4f8;
+            box-shadow: 
+                8px 8px 0 rgba(0, 0, 0, 0.1),
+                0 0 0 8px #b8d8e0,
+                0 0 0 12px #5a5a5a;
+            z-index: 20;
+            display: none;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.8);
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        .advantage-modal.show {
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+        }
+        
+        /* 弹窗标题栏 */
+        .modal-header {
+            background-color: #5a5a5a;
+            color: #fff;
+            padding: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: min(12px, 3vw);
+            border-bottom: 4px solid #5a5a5a;
+            letter-spacing: 1px;
+        }
+        
+        /* 关闭按钮 - 仅装饰 */
+        .close-btn {
+            font-size: 20px;
+            line-height: 16px;
+            color: #ff9e9e;
+            text-shadow: 1px 1px 0 #5a5a5a;
+            cursor: default; /* 移除指针样式 */
+            opacity: 0.7; /* 降低可见性 */
+        }
+        
+        /* 弹窗内容 */
+        .modal-content {
+            padding: 24px;
+            text-align: center;
+            background-color: #f0f8ff;
+            border: 2px dashed #b8d8e0;
+            margin: 8px;
+            position: relative;
+        }
+        
+        /* 标题样式 */
+        .modal-title {
+            font-size: min(22px, 5.5vw);
+            margin-bottom: min(30px, 5vh);
+            color: #5a5a5a;
+            text-shadow: 2px 2px 0 #b8d8e0;
+            letter-spacing: 1px;
+            line-height: 1.5;
+        }
+        
+        /* 优点内容 */
+        .advantage-content {
+            font-size: min(16px, 4vw);
+            color: #5a5a5a;
+            margin-bottom: min(30px, 5vh);
+            line-height: 1.6;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* 开始按钮 */
+        .start-btn {
+            background-color: #5a5a5a;
+            color: #fff;
+            border: none;
+            padding: min(12px, 3vw) min(24px, 6vw);
+            font-size: min(14px, 3.5vw);
+            cursor: pointer;
+            box-shadow: 4px 4px 0 #b8d8e0;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+            letter-spacing: 1px;
+        }
+        
+        .start-btn:hover {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0 #b8d8e0;
+            background-color: #6a6a6a;
+        }
+        
+        /* 下一个按钮 */
+        .next-btn {
+            background-color: #9e9eff;
+            color: #fff;
+            border: none;
+            padding: min(10px, 2.5vw) min(20px, 5vw);
+            font-size: min(12px, 3vw);
+            cursor: pointer;
+            box-shadow: 3px 3px 0 #b8d8e0;
+            transition: all 0.2s;
+            margin-top: 10px;
+        }
+        
+        .next-btn:hover {
+            transform: translate(2px, 2px);
+            box-shadow: 1px 1px 0 #b8d8e0;
+            background-color: #8e8edf;
+        }
+        
+        /* 像素Emoji装饰 */
+        .pixel-emoji {
+            position: absolute;
+            font-size: min(24px, 6vw);
+            z-index: 5;
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        /* 优点弹窗容器 */
+        .advantages-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            z-index: 15;
+            pointer-events: none;
+        }
+        
+        /* 单个优点弹窗 */
+        .advantage-bubble {
+            position: absolute;
+            width: min(280px, 80vw);
+            border: 4px solid #5a5a5a;
+            background-color: #e8f4f8;
+            box-shadow: 
+                8px 8px 0 rgba(0, 0, 0, 0.1),
+                0 0 0 8px #b8d8e0,
+                0 0 0 12px #5a5a5a;
+            z-index: 20;
+            opacity: 0;
+            transform: scale(0);
+            transition: all 0.8s ease;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+        
+        .advantage-bubble.show {
+            opacity: 1;
+            transform: scale(1);
+        }
+        
+        .advantage-bubble .modal-header {
+            padding: min(8px, 2vw) min(12px, 3vw);
+            font-size: min(10px, 2.5vw);
+        }
+        
+        .advantage-bubble .modal-content {
+            padding: min(15px, 4vw);
+            font-size: min(12px, 3vw);
+            min-height: min(80px, 20vh);
+        }
+        
+        /* 结论弹窗 */
+        .conclusion-bubble {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            background: linear-gradient(135deg, #ffb6c1, #ffc0cb);
+            border: 4px solid #5a5a5a;
+            box-shadow: 
+                8px 8px 0 rgba(0, 0, 0, 0.1),
+                0 0 0 8px #ffd7e0,
+                0 0 0 12px #5a5a5a;
+            padding: min(20px, 5vw);
+            text-align: center;
+            width: min(280px, 85vw);
+            opacity: 0;
+            transition: all 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: min(20px, 5vw);
+            z-index: 100;
+            color: #5a3d5b;
+        }
+        
+        .conclusion-bubble.show {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+            animation: pulse 2s infinite alternate;
+        }
+        
+        @keyframes pulse {
+            0% { transform: translate(-50%, -50%) scale(1); }
+            100% { transform: translate(-50%, -50%) scale(1.05); }
+        }
+        
+        /* 漂浮动画 */
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        /* 弹窗出现动画 */
+        @keyframes appear {
+            from {
+                transform: scale(0.8) translateY(20px);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1) translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        /* 像素角落装饰 */
+        .pixel-corner {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            z-index: -1;
+        }
+        
+        .corner-tl {
+            top: -8px;
+            left: -8px;
+            background-color: #ff9e9e;
+        }
+        
+        .corner-tr {
+            top: -8px;
+            right: -8px;
+            background-color: #9eff9e;
+        }
+        
+        .corner-bl {
+            bottom: -8px;
+            left: -8px;
+            background-color: #9e9eff;
+        }
+        
+        .corner-br {
+            bottom: -8px;
+            right: -8px;
+            background-color: #ffff9e;
+        }
+        
+        /* 小尺寸像素角落 */
+        .small-corner {
+            width: 12px;
+            height: 12px;
+        }
+        
+        .small-corner-tl {
+            top: -6px;
+            left: -6px;
+        }
+        
+        .small-corner-tr {
+            top: -6px;
+            right: -6px;
+        }
+        
+        .small-corner-bl {
+            bottom: -6px;
+            left: -6px;
+        }
+        
+        .small-corner-br {
+            bottom: -6px;
+            right: -6px;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <!-- 进度条页面 -->
+        <div class="progress-page" id="progressPage">
+            <div class="container" id="progressContainer">
+                <div class="hearts-container" id="heartsContainer">
+                    <!-- 5个爱心将通过JS动态生成 -->
+                </div>
+                
+                <div class="progress-container">
+                    <div class="progress-bar" id="progressBar">
+                        <span class="percentage" id="percentage">0%</span>
+                    </div>
+                </div>
+                
+                <div class="progress-text" id="progressText">0%</div>
+            </div>
+        </div>
+        
+        <!-- 优点页面 -->
+        <div class="advantages-page" id="advantagesPage">
+            <!-- 像素点背景 -->
+            <div class="pixel-dots"></div>
+            
+            <!-- 像素Emoji装饰 -->
+            <div class="pixel-emoji" style="top:15%;left:10%">❤️</div>
+            <div class="pixel-emoji" style="top:25%;left:85%;animation-delay:0.5s">✨</div>
+            <div class="pixel-emoji" style="top:70%;left:15%;animation-delay:1s">🍑</div>
+            <div class="pixel-emoji" style="top:80%;left:80%;animation-delay:1.5s">🌼</div>
+            
+            <!-- 主弹窗 -->
+            <div class="pixel-modal">
+                <div class="pixel-corner corner-tl"></div>
+                <div class="pixel-corner corner-tr"></div>
+                <div class="pixel-corner corner-bl"></div>
+                <div class="pixel-corner corner-br"></div>
+                
+                <div class="modal-header">
+                    <span>WELCOME</span>
+                    <span class="close-btn">×</span>
+                </div>
+                <div class="modal-content">
+                    <div class="modal-title">梅花花的一百个优点</div>
+                    <button class="start-btn" id="startBtn">点击揭秘</button>
+                </div>
+            </div>
+
+            <!-- 优点弹窗 -->
+            <div class="advantage-modal" id="advantageModal">
+                <div class="pixel-corner corner-tl small-corner small-corner-tl"></div>
+                <div class="pixel-corner corner-tr small-corner small-corner-tr"></div>
+                <div class="pixel-corner corner-bl small-corner small-corner-bl"></div>
+                <div class="pixel-corner corner-br small-corner small-corner-br"></div>
+                
+                <div class="modal-header" id="advantageHeader">
+                    <span>第一条</span>
+                    <span class="close-btn">×</span>
+                </div>
+                <div class="modal-content">
+                    <div class="advantage-content" id="advantageContent"></div>
+                    <button class="next-btn" id="nextBtn">下一个</button>
+                </div>
+            </div>
+            
+            <!-- 优点弹窗容器 -->
+            <div class="advantages-container" id="advantagesContainer"></div>
+            
+            <!-- 结论弹窗 -->
+            <div class="conclusion-bubble" id="conclusionBubble">
+                <div class="pixel-corner corner-tl small-corner small-corner-tl"></div>
+                <div class="pixel-corner corner-tr small-corner small-corner-tr"></div>
+                <div class="pixel-corner corner-bl small-corner small-corner-bl"></div>
+                <div class="pixel-corner corner-br small-corner small-corner-br"></div>
+                <div>一个屏幕装不下你的美好
+                
+                如果有人否定你!
+                我愿意加倍肯定你！</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 进度条页面逻辑
+        document.addEventListener('DOMContentLoaded', function() {
+            const progressPage = document.getElementById('progressPage');
+            const advantagesPage = document.getElementById('advantagesPage');
+            const progressContainer = document.getElementById('progressContainer');
+            const heartsContainer = document.getElementById('heartsContainer');
+            const progressBar = document.getElementById('progressBar');
+            const percentage = document.getElementById('percentage');
+            const progressText = document.getElementById('progressText');
+            
+            // 爱心像素模板 (0=空白 1=可填充 2=边框)
+            const heartTemplate = [
+                [0, 2, 2, 0, 0, 0, 2, 2, 0],
+                [2, 1, 1, 2, 0, 2, 1, 1, 2],
+                [2, 1, 1, 1, 2, 1, 1, 1, 2],
+                [2, 1, 1, 1, 1, 1, 1, 1, 2],
+                [0, 2, 1, 1, 1, 1, 1, 2, 0],
+                [0, 0, 2, 1, 1, 1, 2, 0, 0],
+                [0, 0, 0, 2, 1, 2, 0, 0, 0],
+                [0, 0, 0, 0, 2, 0, 0, 0, 0]
+            ];
+            
+            const totalHearts = 5;
+            const totalColumns = heartTemplate[0].length;
+            let totalFillPixels = 0;
+            
+            // 计算可填充像素总数
+            heartTemplate.forEach(row => {
+                row.forEach(cell => {
+                    if (cell === 1) totalFillPixels++;
+                });
+            });
+            
+            const clicksPerHeart = 20; // 每个爱心需要20次点击
+            const totalClicks = clicksPerHeart * totalHearts;
+            let clickCount = 0;
+            let currentHeartIndex = 0;
+            let currentColumn = 0;
+            
+            // 计算每列的可填充像素数
+            const fillPixelsPerColumn = new Array(totalColumns).fill(0);
+            heartTemplate.forEach(row => {
+                row.forEach((cell, colIndex) => {
+                    if (cell === 1) fillPixelsPerColumn[colIndex]++;
+                });
+            });
+            
+            // 初始化5个爱心
+            function initHearts() {
+                heartsContainer.innerHTML = '';
+                
+                for (let i = 0; i < totalHearts; i++) {
+                    const heart = document.createElement('div');
+                    heart.className = 'pixel-heart';
+                    heart.dataset.index = i;
+                    heart.dataset.filled = '0';
+                    
+                    heartTemplate.forEach((row, rowIndex) => {
+                        row.forEach((cell, colIndex) => {
+                            const pixel = document.createElement('div');
+                            if (cell === 0) {
+                                pixel.className = 'pixel blank';
+                            } else if (cell === 1) {
+                                pixel.className = 'pixel fill';
+                                pixel.dataset.isHeart = 'true';
+                                pixel.dataset.col = colIndex;
+                                pixel.dataset.heartIndex = i;
+                            } else if (cell === 2) {
+                                pixel.className = 'pixel border';
+                            }
+                            heart.appendChild(pixel);
+                        });
+                    });
+                    
+                    heartsContainer.appendChild(heart);
+                }
+            }
+            
+            // 填充当前爱心的当前列
+            function fillCurrentColumn() {
+                const currentHeart = document.querySelector(`.pixel-heart[data-index="${currentHeartIndex}"]`);
+                const columnPixels = Array.from(currentHeart.querySelectorAll(
+                    `.pixel[data-is-heart="true"][data-col="${currentColumn}"]`
+                ));
+                
+                columnPixels.forEach(pixel => {
+                    if (!pixel.classList.contains('active')) {
+                        pixel.classList.add('active');
+                    }
+                });
+            }
+            
+            // 模拟点击事件
+            function simulateClick() {
+                if (clickCount >= totalClicks) {
+                    clearInterval(intervalId);
+                    completeProgress();
+                    return;
+                }
+                
+                clickCount++;
+                const progressPercent = Math.min(Math.round((clickCount / totalClicks) * 100), 100);
+                
+                // 更新进度显示
+                progressBar.style.width = `${progressPercent}%`;
+                percentage.textContent = `${progressPercent}%`;
+                progressText.textContent = `${progressPercent}%`;
+                
+                // 计算当前爱心进度
+                const heartProgress = (clickCount % clicksPerHeart) / clicksPerHeart * 100;
+                currentHeartIndex = Math.floor(clickCount / clicksPerHeart);
+                
+                // 计算当前列
+                let cumulativePercentage = 0;
+                for (let col = 0; col < totalColumns; col++) {
+                    const columnPercentage = (fillPixelsPerColumn[col] / totalFillPixels) * 100;
+                    cumulativePercentage += columnPercentage;
+                    if (heartProgress <= cumulativePercentage) {
+                        currentColumn = col;
+                        break;
+                    }
+                }
+                
+                // 填充当前爱心的当前列
+                if (currentHeartIndex < totalHearts) {
+                    fillCurrentColumn();
+                }
+                
+                // 检查是否全部完成
+                if (clickCount >= totalClicks) {
+                    progressText.innerHTML = "！finish ！";
+                    // 确保所有爱心都被完全填充
+                    for (let i = 0; i < totalHearts; i++) {
+                        const heart = document.querySelector(`.pixel-heart[data-index="${i}"]`);
+                        const pixels = Array.from(heart.querySelectorAll('.pixel.fill'));
+                        pixels.forEach(pixel => {
+                            pixel.classList.add('active');
+                        });
+                    }
+                }
+            }
+            
+            // 进度完成后的处理
+            function completeProgress() {
+                // 添加淡出动画类
+                progressContainer.classList.add('fade-out');
+                
+                // 动画结束后隐藏进度条页面，显示优点页面
+                setTimeout(() => {
+                    progressPage.classList.add('hidden');
+                    advantagesPage.classList.add('visible');
+                    
+                    // 初始化优点页面
+                    initAdvantagesPage();
+                }, 1000); // 与动画持续时间一致
+            }
+            
+            // 初始化
+            initHearts();
+            
+            // 开始自动加载
+            const intervalId = setInterval(simulateClick, 70); // 每30毫秒模拟一次点击
+        });
+        
+        // 优点页面逻辑
+        function initAdvantagesPage() {
+            const advantages = [
+          "宽容（即使我总是表现得不够好，梅花花还是包容了我）",
+                "热心助人，即使是对陌生人也乐于伸出援手",
+                "善良有同理心，共情能力很强",
+                "三观正（几乎没有性别偏见这在我眼里是非常棒的一点）",
+                "尊重女性，平等对待，没有大男子主义，没有性别偏见",
+                "会反省自己，知道自己的缺点存在（但梅花花在我心里真的是天下第一好，就算在我状态很糟糕的时候问出这个问题，回答还会是梅花花）",
+                "脾气好但有原则，不会纵容别人的冒犯",
+                "会自己处理情绪（很少输出自己的坏情绪，就算有也能自己快速调整好）",
+                "乐观向上！虽然会说自己经常丧丧的，但其实是我心里的小太阳和快乐小狗。（所以总是不自觉地向梅花花传播了很多负能量）",
+                "很谦虚，会承认自己的缺点和不足",
+                "是懂得约束自己的人，没有不良嗜好（沉迷游戏熬夜之类的不算嗷），不抽烟，不喝酒，不沾黄赌毒",
+                "热爱音乐，歌品很好（总是能从音乐里获得能量，歌单不一定是我爱听但绝不会难听）",
+                "唱歌好听（请允许我擅自给梅花花颁一个新说唱场外最佳奖（桃评版）",
+                "声音好听（听起来像是凑数的但的确是真心话哦）",
+                "对未来有一定的计划并付诸行动（比如想要有自己的车子和房子，想学电吉他啦，有目标的人应该获得赞赏）",
+                "工作认真（偶尔的摸鱼是必要的，在该认真的时候绝不摸鱼，比如说当时做恋与深空的东西会去了解每个人的特点）",
+                "工作能力强（虽然没有具体问过工作，但是记得会拍照，会ps和ai（话说回来我都不会），似乎偶尔还要做一些琐事）",
+                "会修图，有自己的审美，能调色出好看的照片",
+                "会拍照，能拍出来好看的风景照",
+                "会自己配电脑（虽然这个很多人都会但在我心里也是优点因为我不会）",
+                "会使用电脑（在面临很多故障的时候我只会关机重启但是梅花花会的更多）",
+                "会室内设计（虽然我也上过这门课程却对此一窍不通并且拿了很差的分数）",
+                "会开车（理由是一样的，因为我不会，不会开车不算缺点所以会开车当然是优点啦）",
+                "幽默，总是会给出让人意想不到的回答，让人会心一笑。（导致了不够幽默的我总是接不住话）",
+                "能吃（虽然没有一起吃过饭去验证过，但俗话说得好，能吃是福）",
+                "宅（宅男是好文明，有宏嵩的优点，还没有他爱抽烟的缺点哦）",
+                "会打fps游戏（最近尝试了一下fps，发现好难，虽然梅花花总说玩得不好，其实这在我心里比很多人都厉害）",
+                "很爱妹妹，会关心妹妹的学习和身体健康等等，是一个细心负责任的好哥哥",
+                "很爱妈妈，在节日会给妈妈送花，送礼物，希望为妈妈做更多事情",
+                "总是记得别人的好，即使是伤害过你的人（或许也包括我，我感到很抱歉这不是我本意）",
+                "是一个生活家，买东西的时候很会省钱（比如买的苦无，吧唧收纳盒，还有凉前辈的一些周边，总是能找到性价比最高的买法）",
+                "活在当下，会努力过好每一天。不问过去，不畏将来",
+                "人缘好，朋友很多，因为你对每个朋友都付出真心，即使有时会委屈自己",
+                "语言能力强，会说我不会说的白话，普通话也很标准说得非常好。（或许英语也可以很厉害）",
+                "会收拾自己的外在形象，主动去学习穿搭与妆容。总是干干净净的",
+                "守信用有责任心，不管怎样答应好的事情会做到（最近的事情大概是说好唱生日歌，于是一下班就唱了，真的很好听也很开心）",
+                "会主动去读书（比如《三体》，《全职高手》之类啦，不管是什么书，读了总会有收获的）",
+                "善于发现别人的优点（在我觉得我什么也不会的时候，列举了我会使用的工具）",
+                "真性情，对于不好的事情会感到愤怒，对于美好的事物也会加以最真诚的欣赏",
+                "会画画（因为梅花花曾经提过，或许比我画的还好呢）",
+                "会记住朋友说的小事（我抱怨抽不到桃子泥的时候梅花花记住了，虽然我们都错认了）",
+                "会记得朋友的喜好（见到我喜欢的东西会和我分享）",
+                "有好奇心，乐于去尝试新的东西（体现在会尝试各种各样的游戏，愿意听各种类型的音乐）",
+                "做的梦很有趣，天马行空，每次听梅花花讲述都好像在看精彩的小说，超级有画面感",
+                "表达能力强，有很多精彩的比喻，能用很短的话表达自己（其实我觉得梅花花形容我脾气糟糕的比喻也生动）",
+                "很会接梗，不管是好梗还是烂梗都能稳稳接住",
+                "很会脑筋急转弯，不管是我乱编的还是在网上刷到的，梅花花都能超快速回答出一个精彩的答案",
+                "喜欢小动物，小猫小狗里最喜欢暹罗猫和腊肠狗",
+                "爱自己，就算遇到了很多困难，梅花花也把自己养得很好",
+                "会很认真地做完一些娱乐的测试（比如mbti，网易云的趣味测试（ps:互关回来好不好🥺），对对方的印象九宫格）",
+                "有主见，知道自己想要什么不要什么",
+                "喜欢独处，不管是自己出门还是在家，都能自己找到乐趣",
+                "社交能力强，无论是线上还是线下，必要时候都能很好地处理人际关系",
+                "值得信赖，让人愿意说出内心的秘密",
+                "有安全感，就算是什么都不说什么都不做光是梅花花的存在也让我感到安心",
+                "有耐心（在我很焦虑的时候很有耐心地陪我听歌了）",
+                "很细心，会提醒我关掉手机的nfc更加省电",
+                "会煮泡面（会煮泡面说明会做出能吃的食物所以是优点）",
+                "太阳很晒的时候会做好防晒（防晒计划大成功的时候有和我说）",
+                "下雨天会记得带伞（虽然是人之常情但我总会忘记）",
+                "会把桌面收拾整洁（每一次拍照拍到桌面的时候，都是整整齐齐的）",
+                "会把歌单精心分类（ps:我真的知道错啦互关回来好不好嘛🥺）",
+                "热爱生活，从不因为遇到的挫折觉得活着不好（至少从来没向我这样表达过）",
+                "愿意积极沟通（就算很生气也会好好说话去解决问题）",
+                "不会在小事上钻牛角尖，不内耗",
+                "很大方，对朋友不计较付出，无论是金钱还是时间还是其他",
+                "会认真回复朋友的信息，带上配合表情包不让气氛那么严肃",
+                "不嫉妒不张狂",
+                "会真心为朋友的成功感到开心，真诚地夸奖朋友（比如说在我得奖的时候，发的抖音有很多人看的时候）",
+                "从不恶意贬低他人，不看低朋友",
+                "睡眠质量很好（总之应该比我好很多）",
+                "愿意和我玩抽象，做抽象人类",
+                "有少年气（总之就是非常可爱的少年气，像是少年漫里的男主角一样发光）",
+                "有自己的兴趣爱好，比如游戏，听歌，画画，听书，看动漫，说唱，cosplay ……",
+                "对感兴趣的事情会研究很深，比如说我到现在也分不清各种说唱风格，而梅花花却可以信手拈来",
+                "出cos的时候从不敷衍，会为了更好的还原约假毛找妆娘",
+                "会去健身提升自己（虽然是以前的事情但是态度值得嘉奖）",
+                "说要减肥于是真的瘦了两斤（虽然我我觉得现在就非常好啦，但既然梅花花要做就该支持，也为梅花花取得小小的成果开心（也许现在瘦了更多？）",
+                "能发现身边有趣的东西",
+                "愿意接受我的安利。分享的好东西，好听的歌，会真的收藏起来",
+                "和我有很多共同的爱好。有共同喜欢的动漫，音乐，水果，食物，游戏，香水的味道……十只手指也列举不完",
+                "聊天话题很跳跃也能稳稳接住。就算话题从天南突然跳到地北",
+                "尊重他人隐私，不会随意打听或者传播他人的私事",
+                "严于律己，宽以待人。不会因为自己喜好去要求别人的改变",
+                "做人很坦荡（大概就是社交平台上的东西都是公开的没有见不得人的）",
+                "手好看，是成男手（比我的儿童手好看就是好看）",
+                "脸好看（好看到如果能每天见面我将原谅全世界）",
+                "长得高（一米八，是我从小梦想的身高，就算变成179也是很高反正可以垫）",
+                "头发不是乱糟糟的，会让人很想摸乱（原谅我这个坏坏的想法）",
+                "眼睛是单眼皮（如果是单眼皮的话可以贴双眼皮贴变成双眼皮但是双眼皮不能变成双眼皮，所以是优点）",
+                "出的cos很好看，已经到了可以原图直出的地步",
+                "打针不怕疼（记得梅花花说生病会打很痛的针，却轻描淡写得轻松的样子）",
+                "不害怕一个人去医院看医生",
+                "生病了会按时吃药积极治疗（但是希望梅花花以后永远健健康康不要生病了）",
+                "很会指路（遇到外国人问路的时候直接画给他看，超级高效地解决了问题）",
+                "有时间观念，在有事要出门的时候会提前规划时间",
+                "出门会戴耳机不外放声音，避免可能打扰别人",
+                "懂得平衡，玩的时候尽情玩，该专注时立刻进入状态",
+                "梅花花的存在是让世界变更得美好的",
+                "梅花花在这个世界上独一无二，无可替代"
+            ];
+            
+            let currentIndex = 0;
+            let allShown = false;
+            let canShowConclusion = false;
+            const advantageModal = document.getElementById('advantageModal');
+            const advantageHeader = document.getElementById('advantageHeader');
+            const advantageContent = document.getElementById('advantageContent');
+            const nextBtn = document.getElementById('nextBtn');
+            const advantagesContainer = document.getElementById('advantagesContainer');
+            const conclusionBubble = document.getElementById('conclusionBubble');
+            const modal = document.querySelector('.pixel-modal');
+            const startBtn = document.getElementById('startBtn');
+            
+            // 复古按键音效函数
+            function playBeep(frequency = 440, duration = 0.1, type = 'square', volume = 0.2) {
+                try {
+                    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+                    
+                    oscillator.type = type;
+                    oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+                    gainNode.gain.setValueAtTime(volume, audioContext.currentTime);
+                    
+                    oscillator.start();
+                    oscillator.stop(audioContext.currentTime + duration);
+                } catch (e) {
+                    console.log("Audio error:", e);
+                }
+            }
+            
+            // 为所有按钮添加点击音效
+            function setupButtonSounds() {
+                const buttons = document.querySelectorAll('button');
+                buttons.forEach(button => {
+                    button.addEventListener('click', function() {
+                        playBeep(440 + Math.random() * 100, 0.1);
+                    });
+                });
+            }
+            
+            // 显示当前优点弹窗
+            function showCurrentAdvantage() {
+                advantageHeader.querySelector('span').textContent = `第${currentIndex + 1}条`;
+                advantageContent.textContent = advantages[currentIndex];
+                
+                // 添加弹出效果
+                advantageModal.style.display = 'block';
+                setTimeout(() => {
+                    advantageModal.classList.add('show');
+                    playBeep(660, 0.15, 'sine', 0.3); // 弹窗弹出时的不同音效
+                }, 10);
+                
+                // 如果是最后一个优点，修改按钮文字
+                if (currentIndex === advantages.length - 1) {
+                    nextBtn.textContent = '❤再点一下❤';
+                }
+            }
+            
+            // 显示所有优点弹窗
+            function showAllAdvantages() {
+                // 添加关闭动画
+                advantageModal.classList.remove('show');
+                setTimeout(() => {
+                    advantageModal.style.display = 'none';
+                    advantagesContainer.style.display = 'flex';
+                    
+                    // 创建并显示所有优点弹窗
+                    advantages.forEach((text, index) => {
+                        setTimeout(() => {
+                            const bubble = document.createElement('div');
+                            bubble.className = 'advantage-bubble';
+                            
+                            // 添加角落装饰
+                            const corners = [
+                                {class: 'corner-tl small-corner small-corner-tl', top: '-6px', left: '-6px'},
+                                {class: 'corner-tr small-corner small-corner-tr', top: '-6px', right: '-6px'},
+                                {class: 'corner-bl small-corner small-corner-bl', bottom: '-6px', left: '-6px'},
+                                {class: 'corner-br small-corner small-corner-br', bottom: '-6px', right: '-6px'}
+                            ];
+                            
+                            corners.forEach(corner => {
+                                const cornerEl = document.createElement('div');
+                                cornerEl.className = `pixel-corner ${corner.class}`;
+                                cornerEl.style.position = 'absolute';
+                                cornerEl.style[corner.top ? 'top' : 'bottom'] = corner.top || corner.bottom;
+                                cornerEl.style[corner.left ? 'left' : 'right'] = corner.left || corner.right;
+                                bubble.appendChild(cornerEl);
+                            });
+                            
+                            // 添加标题和内容
+                            const header = document.createElement('div');
+                            header.className = 'modal-header';
+                            header.innerHTML = `<span>第${index + 1}条</span><span class="close-btn">×</span>`;
+                            
+                            const content = document.createElement('div');
+                            content.className = 'modal-content';
+                            content.textContent = text;
+                            
+                            bubble.appendChild(header);
+                            bubble.appendChild(content);
+                            
+                            // 随机位置
+                            const left = 5 + Math.random() * 80;
+                            const top = 5 + Math.random() * 80;
+                            bubble.style.left = `${left}%`;
+                            bubble.style.top = `${top}%`;
+                            
+                            advantagesContainer.appendChild(bubble);
+                            
+                            // 显示弹窗
+                            setTimeout(() => {
+                                bubble.classList.add('show');
+                                playBeep(300 + index * 20, 0.08, 'sine', 0.2); // 每个弹窗不同的音高
+                                
+                                // 最后一个弹窗显示后允许显示结论
+                                if (index === advantages.length - 1) {
+                                    canShowConclusion = true;
+                                    playBeep(880, 0.3, 'sine', 0.4); // 最后一个弹窗的特殊音效
+                                }
+                            }, 100);
+                        }, index * 100); // 减慢显示速度
+                    });
+                }, 400);
+            }
+            
+            // 点击"点击揭秘"按钮
+            startBtn.addEventListener('click', function() {
+                playBeep(523.25, 0.1, 'square', 0.3); // C5音高
+                modal.style.display = 'none';
+                showCurrentAdvantage();
+            });
+            
+            // 点击"下一个"按钮
+            nextBtn.addEventListener('click', function() {
+                playBeep(587.33, 0.1, 'square', 0.3); // D5音高
+                if (currentIndex < advantages.length - 1) {
+                    // 添加关闭动画
+                    advantageModal.classList.remove('show');
+                    setTimeout(() => {
+                        // 显示下一个优点
+                        currentIndex++;
+                        showCurrentAdvantage();
+                    }, 80);
+                } else {
+                    // 显示所有优点弹窗
+                    showAllAdvantages();
+                }
+            });
+            
+            // 点击任意位置显示结论（当所有弹窗显示完成后）
+            document.addEventListener('click', function(e) {
+                if (canShowConclusion && !conclusionBubble.classList.contains('show') && 
+                    e.target !== nextBtn && !advantageModal.contains(e.target)) {
+                    playBeep(1046.5, 0.3, 'sine', 0.5); // C6音高
+                    conclusionBubble.classList.add('show');
+                }
+            });
+            
+          
+            // 初始化按钮音效
+            setupButtonSounds();
+        }
+    </script>
+</body>
+</html>
